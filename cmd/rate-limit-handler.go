@@ -66,7 +66,7 @@ func (c *rateLimit) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Acquire the connection if queue is not full, otherwise
 	// code path waits here until the previous case is true.
 	if err := c.acquire(); err != nil {
-		w.WriteHeader(http.StatusServiceUnavailable)
+		w.WriteHeader(http.StatusTooManyRequests)
 		return
 	}
 
