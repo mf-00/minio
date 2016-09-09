@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer
-docker pull golang
+#docker pull golang
 go version
 go get -d github.com/mf-00/minio
 echo "GOPATH is: $GOPATH"
