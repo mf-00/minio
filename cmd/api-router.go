@@ -16,7 +16,12 @@
 
 package cmd
 
-import router "github.com/gorilla/mux"
+import (
+	"fmt"
+	"net/http"
+
+	router "github.com/gorilla/mux"
+)
 
 // objectAPIHandler implements and provides http handlers for S3 API.
 type objectAPIHandlers struct {
@@ -26,7 +31,7 @@ type objectAPIHandlers struct {
 // registerAPIRouter - registers S3 compatible APIs.
 func registerAPIRouter(mux *router.Router, api objectAPIHandlers) {
 	// API Router
-	apiRouter := mux.NewRoute().PathPrefix("/").Subrouter()
+	apiRouter := mux.NewRoute() //.PathPrefix("/").Subrouter()
 
 	// Bucket router
 	bucket := apiRouter.PathPrefix("/{bucket}").Subrouter()
@@ -90,5 +95,11 @@ func registerAPIRouter(mux *router.Router, api objectAPIHandlers) {
 	/// Root operation
 
 	// ListBuckets
-	apiRouter.Methods("GET").HandlerFunc(api.ListBucketsHandler)
+	primeRouter := mux.NewRoute().PathPrefix("/buckets").Subrouter()
+	primeRouter.Methods("GET").HandlerFunc(api.ListBucketsHandler)
+	apiRouter.HandlerFunc("/", _defaultHandler)
+}
+
+func _defaultHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "<h1>Hello from Cisco Shipped testing!</h1>\n")
 }
