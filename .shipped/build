@@ -1,6 +1,8 @@
 #!/bin/bash
 
 go get -d github.com/mf-00/minio
+pwd
+echo "GOPATH is: $GOPATH"
 cd $GOPATH/src/github.com/mf-00/minio
 make
 
