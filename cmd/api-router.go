@@ -31,7 +31,7 @@ type objectAPIHandlers struct {
 // registerAPIRouter - registers S3 compatible APIs.
 func registerAPIRouter(mux *router.Router, api objectAPIHandlers) {
 	// API Router
-	apiRouter := mux.NewRoute() //.PathPrefix("/").Subrouter()
+	apiRouter := mux.NewRoute().PathPrefix("/").Subrouter()
 
 	// Bucket router
 	bucket := apiRouter.PathPrefix("/{bucket}").Subrouter()
@@ -97,7 +97,7 @@ func registerAPIRouter(mux *router.Router, api objectAPIHandlers) {
 	// ListBuckets
 	primeRouter := mux.NewRoute().PathPrefix("/buckets").Subrouter()
 	primeRouter.Methods("GET").HandlerFunc(api.ListBucketsHandler)
-	apiRouter.HandlerFunc("/", _defaultHandler)
+	mux.HandlerFunc("/", _defaultHandler)
 }
 
 func _defaultHandler(w http.ResponseWriter, r *http.Request) {
