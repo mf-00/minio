@@ -1,5 +1,5 @@
 build:
-  image: golang:1.5
+  image: golang:1.6
   commands:
   - echo "build commands"
   - .shipped/build
