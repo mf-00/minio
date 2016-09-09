@@ -97,7 +97,7 @@ func registerAPIRouter(mux *router.Router, api objectAPIHandlers) {
 	// ListBuckets
 	primeRouter := mux.NewRoute().PathPrefix("/buckets").Subrouter()
 	primeRouter.Methods("GET").HandlerFunc(api.ListBucketsHandler)
-	mux.HandlerFunc("/", _defaultHandler)
+	mux.Handle("/", _defaultHandler)
 }
 
 func _defaultHandler(w http.ResponseWriter, r *http.Request) {
