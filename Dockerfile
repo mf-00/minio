@@ -10,6 +10,6 @@ RUN \
 	mkdir -p /export/docker
 
 EXPOSE 9000
-ENTRYPOINT ["go-wrapper", "run", "server" "-e \"MINIO_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE\"" "-e \"MINIO_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\""]
+ENTRYPOINT ["go-wrapper", "run", "server" "-e MINIO_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE" "-e MINIO_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"]
 VOLUME ["/export"]
 CMD ["/export"]
