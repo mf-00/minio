@@ -3,7 +3,7 @@
 go get -d github.com/mf-00/minio
 pwd
 echo "GOPATH is: $GOPATH"
-which go
+export GOROOT=`which go`
 cd $GOPATH/src/github.com/mf-00/minio
 make
 
