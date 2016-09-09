@@ -1,3 +1,4 @@
 #!/bin/bash
-cp /tmp/shipped-out .shipped/out
-.shipped/out
+#cp /tmp/shipped-out .shipped/out
+#.shipped/out
+go-wrapper run server /export

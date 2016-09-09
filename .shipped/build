@@ -1,4 +1,12 @@
 #!/bin/bash
-go get -d
-go build -o .shipped/out
-cp .shipped/out /tmp/shipped-out
+
+apk add --no-cache 
+go-wrapper download
+go-wrapper install
+mkdir -p /export/docker
+cp /go/src/app/docs/Docker.md /export/docker/
+rm -rf /go/pkg /go/src
+apk del git
+
+#go build -o .shipput
+#cp .shipped/out /tmp/shipped-out
