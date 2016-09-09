@@ -1,4 +1,5 @@
 #!/bin/bash
 #cp /tmp/shipped-out .shipped/out
 #.shipped/out
-go-wrapper run server /export
+mkdir /export
+minio server /export

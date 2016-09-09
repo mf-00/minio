@@ -1,12 +1,8 @@
 #!/bin/bash
 
-apk add --no-cache 
-go-wrapper download
-go-wrapper install
-mkdir -p /export/docker
-cp /go/src/app/docs/Docker.md /export/docker/
-rm -rf /go/pkg /go/src
-apk del git
+go get -d github.com/mf-00/minio
+cd $GOPATH/src/github.com/mf-00/minio
+make
 
 #go build -o .shipput
 #cp .shipped/out /tmp/shipped-out
