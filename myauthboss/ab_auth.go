@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
+	"net/smtp"
 	"path/filepath"
 	"time"
 
@@ -89,7 +89,8 @@ func SetupAuthboss() {
 	ab.CookieStoreMaker = NewCookieStorer
 	ab.SessionStoreMaker = NewSessionStorer
 
-	ab.Mailer = authboss.LogMailer(os.Stdout)
+	//ab.Mailer = authboss.LogMailer(os.Stdout)
+	ab.Mailer = authboss.SMTPMailer("smtp.ym.163.com:25", smtp.PlainAuth("", "noreply@xuntonglab.com", "7X11MLtiF6", "smtp.ym.163.com"))
 
 	ab.Policies = []authboss.Validator{
 		authboss.Rules{
