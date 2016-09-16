@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"net/http"
 
+	myauthboss "github.com/mf-00/minio/myauthboss"
+
 	router "github.com/gorilla/mux"
 )
 
@@ -30,8 +32,15 @@ type objectAPIHandlers struct {
 
 // registerAPIRouter - registers S3 compatible APIs.
 func registerAPIRouter(mux *router.Router, api objectAPIHandlers) {
+
+	myauthboss.SetupStorer()
+
+	myauthboss.SetupAuthboss()
+
 	// API Router
 	apiRouter := mux.NewRoute().PathPrefix("/").Subrouter()
+
+	apiRouter.PathPrefix("/auth").Handler(myauthboss.GetAuthboss().NewRouter())
 
 	// Bucket router
 	bucket := apiRouter.PathPrefix("/{bucket}").Subrouter()
