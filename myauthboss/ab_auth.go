@@ -107,6 +107,10 @@ func SetupAuthboss() {
 		},
 	}
 
+	ab.RegisterOKPath = "/auth/login"
+	ab.AuthLoginOKPath = "/minio/"
+	ab.AuthLoginFailPath = "/auth/login"
+
 	if err := ab.Init(); err != nil {
 		log.Fatal(err)
 	}
