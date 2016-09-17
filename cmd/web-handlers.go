@@ -33,8 +33,8 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/rpc/v2/json2"
+	"github.com/mf-00/miniobrowser"
 	"github.com/minio/minio-go/pkg/policy"
-	"github.com/minio/miniobrowser"
 )
 
 // isJWTReqAuthenticated validates if any incoming request to be a
@@ -280,6 +280,30 @@ func (web *webAPIHandlers) Login(r *http.Request, args *LoginArgs, reply *LoginR
 	}
 
 	token, err := jwt.GenerateToken(args.Username)
+	if err != nil {
+		return &json2.Error{Message: err.Error()}
+	}
+	reply.Token = token
+	reply.UIVersion = miniobrowser.UIVersion
+	return nil
+}
+
+func (web *webAPIHandlers) Login0(r *http.Request, reply *LoginRep) error {
+
+	// TODO 2016.9.17, Mingfeng: Need verify authboss is logged in
+
+	argsDefault := &LoginArgs{"AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}
+
+	jwt, err := newJWT()
+	if err != nil {
+		return &json2.Error{Message: err.Error()}
+	}
+
+	if err = jwt.Authenticate(argsDefault.Username, argsDefault.Password); err != nil {
+		return &json2.Error{Message: err.Error()}
+	}
+
+	token, err := jwt.GenerateToken(argsDefault.Username)
 	if err != nil {
 		return &json2.Error{Message: err.Error()}
 	}
