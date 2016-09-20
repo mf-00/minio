@@ -17,9 +17,6 @@
 package cmd
 
 import (
-	"fmt"
-	"net/http"
-
 	myauthboss "github.com/mf-00/minio/myauthboss"
 
 	router "github.com/gorilla/mux"
@@ -32,10 +29,6 @@ type objectAPIHandlers struct {
 
 // registerAPIRouter - registers S3 compatible APIs.
 func registerAPIRouter(mux *router.Router, api objectAPIHandlers) {
-
-	myauthboss.SetupStorer()
-
-	myauthboss.SetupAuthboss()
 
 	// API Router
 	apiRouter := mux.NewRoute().PathPrefix("/").Subrouter()
@@ -106,9 +99,4 @@ func registerAPIRouter(mux *router.Router, api objectAPIHandlers) {
 	// ListBuckets
 	primeRouter := mux.NewRoute().PathPrefix("/buckets").Subrouter()
 	primeRouter.Methods("GET").HandlerFunc(api.ListBucketsHandler)
-	mux.Path("/").HandlerFunc(api._defaultHandler)
-}
-
-func (api objectAPIHandlers) _defaultHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>Hello from Cisco Shipped testing!</h1>\n")
 }

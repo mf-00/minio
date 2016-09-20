@@ -33,6 +33,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/rpc/v2/json2"
+	"github.com/mf-00/minio/myauthboss"
 	"github.com/mf-00/miniobrowser"
 	"github.com/minio/minio-go/pkg/policy"
 )
@@ -280,30 +281,6 @@ func (web *webAPIHandlers) Login(r *http.Request, args *LoginArgs, reply *LoginR
 	}
 
 	token, err := jwt.GenerateToken(args.Username)
-	if err != nil {
-		return &json2.Error{Message: err.Error()}
-	}
-	reply.Token = token
-	reply.UIVersion = miniobrowser.UIVersion
-	return nil
-}
-
-func (web *webAPIHandlers) Login0(r *http.Request, reply *LoginRep) error {
-
-	// TODO 2016.9.17, Mingfeng: Need verify authboss is logged in
-
-	argsDefault := &LoginArgs{"AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}
-
-	jwt, err := newJWT()
-	if err != nil {
-		return &json2.Error{Message: err.Error()}
-	}
-
-	if err = jwt.Authenticate(argsDefault.Username, argsDefault.Password); err != nil {
-		return &json2.Error{Message: err.Error()}
-	}
-
-	token, err := jwt.GenerateToken(argsDefault.Username)
 	if err != nil {
 		return &json2.Error{Message: err.Error()}
 	}
@@ -604,4 +581,21 @@ func (web *webAPIHandlers) SetBucketPolicy(r *http.Request, args *SetBucketPolic
 	reply.UIVersion = miniobrowser.UIVersion
 
 	return nil
+}
+
+func (web *webAPIHandlers) _defaultHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "<h1>Hello from Cisco Shipped testing!</h1>\n")
+}
+
+func (web *webAPIHandlers) redirectMinioHandler(w http.ResponseWriter, r *http.Request) {
+	jwt, err := newJWT()
+	if err != nil {
+		fmt.Fprintf(w, "<h1>Failed to get minio token:%s</h1>\n", err)
+	}
+
+	token, err := jwt.GenerateToken(jwt.credential.AccessKeyID)
+	if err != nil {
+		fmt.Fprintf(w, "<h1>Failed to get minio token:%s</h1>\n", err)
+	}
+	myauthboss.RedirectMinio(w, r, token)
 }

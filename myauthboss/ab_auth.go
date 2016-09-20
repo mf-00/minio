@@ -23,10 +23,8 @@ import (
 	_ "gopkg.in/authboss.v0/remember"
 
 	"github.com/aarondl/tpl"
-	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
-	"github.com/justinas/alice"
 	"github.com/justinas/nosurf"
 )
 
@@ -108,80 +106,12 @@ func SetupAuthboss() {
 	}
 
 	ab.RegisterOKPath = "/auth/login"
-	ab.AuthLoginOKPath = "/minio/"
+	ab.AuthLoginOKPath = "/redirectMinio"
 	ab.AuthLoginFailPath = "/auth/login"
 
 	if err := ab.Init(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-type Blog struct {
-	ID       int
-	Title    string
-	AuthorID string
-	Date     time.Time
-	Content  string
-}
-
-type Blogs []Blog
-
-var blogs = Blogs{
-	{1, "My first Hook", "Stitches", time.Now().AddDate(0, 0, -3),
-		`When I was young I was weak. But then I grew up and now I'm ridiculous` +
-			`because I can hook a whole team and destroy them with gorge lololo. ` +
-			`Look at me mom. I'm a big kid now!`,
-	},
-	{2, "Halp the nerfed!11", "Murky", time.Now().AddDate(0, 0, -1),
-		`I used to be really amazing, then they nerfed me, then I was really` +
-			`good in the right hands, now... I have no idea, why Blizzard? Why??!!`,
-	},
-}
-
-func main2() {
-	// Initialize Sessions and Cookies
-	// Typically gorilla securecookie and sessions packages require
-	// highly random secret keys that are not divulged to the public.
-	//
-	// In this example we use keys generated one time (if these keys ever become
-	// compromised the gorilla libraries allow for key rotation, see gorilla docs)
-	// The keys are 64-bytes as recommended for HMAC keys as per the gorilla docs.
-	//
-	// These values MUST be changed for any new project as these keys are already "compromised"
-	// as they're in the public domain, if you do not change these your application will have a fairly
-	// wide-opened security hole. You can generate your own with the code below, or using whatever method
-	// you prefer:
-	//
-	//    func main() {
-	//        fmt.Println(base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(64)))
-	//    }
-	//
-	// We store them in base64 in the example to make it easy if we wanted to move them later to
-	// a configuration environment var or file.
-	cookieStoreKey, _ := base64.StdEncoding.DecodeString(`NpEPi8pEjKVjLGJ6kYCS+VTCzi6BUuDzU0wrwXyf5uDPArtlofn2AG6aTMiPmN3C909rsEWMNqJqhIVPGP3Exg==`)
-	sessionStoreKey, _ := base64.StdEncoding.DecodeString(`AbfYwmmt8UCwUuhd9qvfNA9UCuN1cVcKJN1ofbiky6xCyyBj20whe40rJa3Su0WOWLWcPpO1taqJdsEI/65+JA==`)
-	cookieStore = securecookie.New(cookieStoreKey, nil)
-	sessionStore = sessions.NewCookieStore(sessionStoreKey)
-
-	// Initialize ab.
-	SetupAuthboss()
-
-	mux := mux.NewRouter()
-
-	mux.PathPrefix("/auth").Handler(ab.NewRouter())
-
-	// Set up our middleware chain
-	stack := alice.New(logger, nosurfing, ab.ExpireMiddleware).Then(mux)
-
-	// Start the server
-	/*port := os.Getenv("PORT")
-	if len(port) == 0 {
-		port = "3000"
-	}*/
-
-	port := "8888"
-	//http.HandleFunc("/", _defaultHandler)
-	http.ListenAndServe(":"+port, stack)
 }
 
 func layoutData(w http.ResponseWriter, r *http.Request) authboss.HTMLData {
@@ -200,18 +130,9 @@ func layoutData(w http.ResponseWriter, r *http.Request) authboss.HTMLData {
 	}
 }
 
-func index(w http.ResponseWriter, r *http.Request) {
-	data := layoutData(w, r).MergeKV("posts", blogs)
-	mustRender(w, r, "index", data)
-}
-
-func listBuckets(w http.ResponseWriter, r *http.Request) {
-	data := layoutData(w, r).MergeKV("posts", blogs)
-	mustRender(w, r, "index", data)
-}
-
-func _defaultHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>Hello from Cisco Shipped testing!</h1>\n")
+func RedirectMinio(w http.ResponseWriter, r *http.Request, minioToken string) {
+	data := layoutData(w, r).MergeKV("minioToken", minioToken)
+	mustRender(w, r, "redirect_minio", data)
 }
 
 func mustRender(w http.ResponseWriter, r *http.Request, name string, data authboss.HTMLData) {
