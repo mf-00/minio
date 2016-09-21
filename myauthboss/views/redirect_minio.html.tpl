@@ -17,5 +17,3 @@
 	window.location.replace("/auth/login")
 </script>
 {{end}}
-
-<div class="row"> Failed to get storage token</div>
