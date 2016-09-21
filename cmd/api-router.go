@@ -16,11 +16,7 @@
 
 package cmd
 
-import (
-	myauthboss "github.com/mf-00/minio/myauthboss"
-
-	router "github.com/gorilla/mux"
-)
+import router "github.com/gorilla/mux"
 
 // objectAPIHandler implements and provides http handlers for S3 API.
 type objectAPIHandlers struct {
@@ -32,8 +28,6 @@ func registerAPIRouter(mux *router.Router, api objectAPIHandlers) {
 
 	// API Router
 	apiRouter := mux.NewRoute().PathPrefix("/").Subrouter()
-
-	apiRouter.PathPrefix("/auth").Handler(myauthboss.GetAuthboss().NewRouter())
 
 	// Bucket router
 	bucket := apiRouter.PathPrefix("/{bucket}").Subrouter()

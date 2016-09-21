@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/smtp"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -88,7 +89,9 @@ func SetupAuthboss() {
 	ab.SessionStoreMaker = NewSessionStorer
 
 	//ab.Mailer = authboss.LogMailer(os.Stdout)
-	ab.Mailer = authboss.SMTPMailer("smtp.ym.163.com:25", smtp.PlainAuth("", "noreply@xuntonglab.com", "7X11MLtiF6", "smtp.ym.163.com"))
+	// Fetch email password from environment variables if any.
+	emailPassword := os.Getenv("NEWGO_EMAIL_PASSWORD")
+	ab.Mailer = authboss.SMTPMailer("smtp.gmail.com:587", smtp.PlainAuth("", "reuben.yang@gmail.com", emailPassword, "smtp.gmail.com"))
 
 	ab.Policies = []authboss.Validator{
 		authboss.Rules{
@@ -108,6 +111,7 @@ func SetupAuthboss() {
 	ab.RegisterOKPath = "/auth/login"
 	ab.AuthLoginOKPath = "/redirectMinio"
 	ab.AuthLoginFailPath = "/auth/login"
+	ab.AuthLogoutOKPath = "/redirectMinio"
 
 	if err := ab.Init(); err != nil {
 		log.Fatal(err)

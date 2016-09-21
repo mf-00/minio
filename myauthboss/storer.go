@@ -56,6 +56,13 @@ func NewMemStorer() *MemStorer {
 				Email:     "zeratul@heroes.com",
 				Confirmed: true,
 			},
+			"test@123.com": User{
+				ID:        1,
+				Name:      "heroes.com",
+				Password:  "$2a$10$XtW/BrS5HeYIuOCXYe8DFuInetDMdaarMUJEOg/VA/JAIDgw3l4aG", // pass = 1234
+				Email:     "test@123.com",
+				Confirmed: true,
+			},
 		},
 		Tokens: make(map[string][]string),
 	}
