@@ -19,11 +19,12 @@ package cmd
 import (
 	"crypto/hmac"
 	"encoding/hex"
-	"github.com/minio/sha256-simd"
 	"net/http"
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/minio/sha256-simd"
 )
 
 // http Header "x-amz-content-sha256" == "UNSIGNED-PAYLOAD" indicates that the
@@ -41,12 +42,12 @@ func skipContentSha256Cksum(r *http.Request) bool {
 // isValidRegion - verify if incoming region value is valid with configured Region.
 func isValidRegion(reqRegion string, confRegion string) bool {
 	if confRegion == "" || confRegion == "US" {
-		confRegion = "us-east-1"
+		confRegion = serverRegion
 	}
 	// Some older s3 clients set region as "US" instead of
 	// "us-east-1", handle it.
 	if reqRegion == "US" {
-		reqRegion = "us-east-1"
+		reqRegion = serverRegion
 	}
 	return reqRegion == confRegion
 }

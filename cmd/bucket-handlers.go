@@ -92,7 +92,7 @@ func (api objectAPIHandlers) GetBucketLocationHandler(w http.ResponseWriter, r *
 	encodedSuccessResponse := encodeResponse(LocationResponse{})
 	// Get current region.
 	region := serverConfig.GetRegion()
-	if region != "us-east-1" {
+	if region != serverRegion {
 		encodedSuccessResponse = encodeResponse(LocationResponse{
 			Location: region,
 		})

@@ -63,3 +63,8 @@ var (
 	colorBlue = color.New(color.FgBlue).SprintfFunc()
 	colorBold = color.New(color.Bold).SprintFunc()
 )
+
+var (
+	newgo        = "newgo"
+	serverRegion = "us-east-1"
+)

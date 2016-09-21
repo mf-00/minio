@@ -79,7 +79,7 @@ func migrateV2ToV3() {
 	srvConfig.Region = cv2.Credentials.Region
 	if srvConfig.Region == "" {
 		// Region needs to be set for AWS Signature V4.
-		srvConfig.Region = "us-east-1"
+		srvConfig.Region = serverRegion
 	}
 	srvConfig.Logger.Console = consoleLogger{
 		Enable: true,
@@ -134,7 +134,7 @@ func migrateV3ToV4() {
 	srvConfig.Region = cv3.Region
 	if srvConfig.Region == "" {
 		// Region needs to be set for AWS Signature Version 4.
-		srvConfig.Region = "us-east-1"
+		srvConfig.Region = serverRegion
 	}
 	srvConfig.Logger.Console = cv3.Logger.Console
 	srvConfig.Logger.File = cv3.Logger.File
@@ -171,7 +171,7 @@ func migrateV5ToV6() {
 	srvConfig.Region = cv5.Region
 	if srvConfig.Region == "" {
 		// Region needs to be set for AWS Signature Version 4.
-		srvConfig.Region = "us-east-1"
+		srvConfig.Region = serverRegion
 	}
 	srvConfig.Logger.Console = cv5.Logger.Console
 	srvConfig.Logger.File = cv5.Logger.File
@@ -237,7 +237,7 @@ func migrateV4ToV5() {
 	srvConfig.Region = cv4.Region
 	if srvConfig.Region == "" {
 		// Region needs to be set for AWS Signature Version 4.
-		srvConfig.Region = "us-east-1"
+		srvConfig.Region = serverRegion
 	}
 	srvConfig.Logger.Console = cv4.Logger.Console
 	srvConfig.Logger.File = cv4.Logger.File
