@@ -54,11 +54,20 @@ func SetupStorer() {
 }
 
 func SetupAuthboss() {
+
+	hostEnv := os.Getenv("HOST_NEWGO")
+	if hostEnv == "" {
+		hostEnv = os.Getenv("HOST_MINIO")
+	}
+	if hostEnv == "" {
+		hostEnv = `http://localhost:9000`
+	}
+
 	ab.Storer = database
 	ab.OAuth2Storer = database
 	ab.MountPath = "/auth"
 	ab.ViewsPath = "myauthboss/ab_views"
-	ab.RootURL = `http://localhost:9000`
+	ab.RootURL = hostEnv
 
 	ab.LayoutDataMaker = layoutData
 
