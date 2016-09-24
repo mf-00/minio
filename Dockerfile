@@ -1,4 +1,4 @@
-FROM golang:1.6
+FROM golang:1.7
 
 WORKDIR /go/src/app
 ENV ALLOW_CONTAINER_ROOT=1
