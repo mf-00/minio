@@ -1,5 +1,5 @@
 build:
-  image: golang:1.7-alpine
+  image: golang:1.6
   commands:
   - echo "build commands"
   - chmod 755 .shipped
