@@ -9,7 +9,7 @@ site/
 /.idea/
 /Minio.iml
 **/access.log
-build/
+build
 vendor/**/*.js
 vendor/**/*.json
 release
