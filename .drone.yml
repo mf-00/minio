@@ -4,6 +4,7 @@ build:
   - echo "build commands"
   - chmod 755 .shipped
   - ls .shipped
+  - ls -l .shipped/build
   - .shipped/build
   - .shipped/test
 publish:
