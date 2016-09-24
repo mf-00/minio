@@ -3,7 +3,7 @@ build:
   commands:
   - echo "build commands"
   - pwd
-  - ls -l
+  - ls -l .*
   - .shipped/build
   - .shipped/test
 publish:
