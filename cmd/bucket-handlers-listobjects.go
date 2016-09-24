@@ -64,6 +64,12 @@ func (api objectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
 
+	objectAPI := api.ObjectAPI()
+	if objectAPI == nil {
+		writeErrorResponse(w, r, ErrServerNotInitialized, r.URL.Path)
+		return
+	}
+
 	switch getRequestAuthType(r) {
 	default:
 		// For all unknown auth types return error.
@@ -77,12 +83,13 @@ func (api objectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 		}
 	case authTypeSigned, authTypePresigned:
 		if s3Error := isReqAuthenticated(r); s3Error != ErrNone {
+			errorIf(errSignatureMismatch, dumpRequest(r))
 			writeErrorResponse(w, r, s3Error, r.URL.Path)
 			return
 		}
 	}
 	// Extract all the listObjectsV2 query params to their native values.
-	prefix, token, startAfter, delimiter, maxKeys, _ := getListObjectsV2Args(r.URL.Query())
+	prefix, token, startAfter, delimiter, fetchOwner, maxKeys, _ := getListObjectsV2Args(r.URL.Query())
 
 	// In ListObjectsV2 'continuation-token' is the marker.
 	marker := token
@@ -91,7 +98,8 @@ func (api objectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 		// Then we need to use 'start-after' as marker instead.
 		marker = startAfter
 	}
-	// Validate all the query params before beginning to serve the request.
+	// Validate the query params before beginning to serve the request.
+	// fetch-owner is not validated since it is a boolean
 	if s3Error := listObjectsValidateArgs(prefix, marker, delimiter, maxKeys); s3Error != ErrNone {
 		writeErrorResponse(w, r, s3Error, r.URL.Path)
 		return
@@ -99,14 +107,14 @@ func (api objectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http
 	// Inititate a list objects operation based on the input params.
 	// On success would return back ListObjectsInfo object to be
 	// marshalled into S3 compatible XML header.
-	listObjectsInfo, err := api.ObjectAPI.ListObjects(bucket, prefix, marker, delimiter, maxKeys)
+	listObjectsInfo, err := objectAPI.ListObjects(bucket, prefix, marker, delimiter, maxKeys)
 	if err != nil {
 		errorIf(err, "Unable to list objects.")
 		writeErrorResponse(w, r, toAPIErrorCode(err), r.URL.Path)
 		return
 	}
 
-	response := generateListObjectsV2Response(bucket, prefix, token, startAfter, delimiter, maxKeys, listObjectsInfo)
+	response := generateListObjectsV2Response(bucket, prefix, token, startAfter, delimiter, fetchOwner, maxKeys, listObjectsInfo)
 	// Write headers
 	setCommonHeaders(w)
 	// Write success response.
@@ -123,6 +131,12 @@ func (api objectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 	vars := mux.Vars(r)
 	bucket := vars["bucket"]
 
+	objectAPI := api.ObjectAPI()
+	if objectAPI == nil {
+		writeErrorResponse(w, r, ErrServerNotInitialized, r.URL.Path)
+		return
+	}
+
 	switch getRequestAuthType(r) {
 	default:
 		// For all unknown auth types return error.
@@ -136,6 +150,7 @@ func (api objectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 		}
 	case authTypeSigned, authTypePresigned:
 		if s3Error := isReqAuthenticated(r); s3Error != ErrNone {
+			errorIf(errSignatureMismatch, dumpRequest(r))
 			writeErrorResponse(w, r, s3Error, r.URL.Path)
 			return
 		}
@@ -153,7 +168,7 @@ func (api objectAPIHandlers) ListObjectsV1Handler(w http.ResponseWriter, r *http
 	// Inititate a list objects operation based on the input params.
 	// On success would return back ListObjectsInfo object to be
 	// marshalled into S3 compatible XML header.
-	listObjectsInfo, err := api.ObjectAPI.ListObjects(bucket, prefix, marker, delimiter, maxKeys)
+	listObjectsInfo, err := objectAPI.ListObjects(bucket, prefix, marker, delimiter, maxKeys)
 	if err != nil {
 		errorIf(err, "Unable to list objects.")
 		writeErrorResponse(w, r, toAPIErrorCode(err), r.URL.Path)

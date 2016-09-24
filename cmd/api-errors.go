@@ -48,7 +48,6 @@ const (
 	ErrNone APIErrorCode = iota
 	ErrAccessDenied
 	ErrBadDigest
-	ErrBucketAlreadyExists
 	ErrEntityTooSmall
 	ErrEntityTooLarge
 	ErrIncompleteBody
@@ -103,6 +102,7 @@ const (
 	ErrNegativeExpires
 	ErrAuthHeaderEmpty
 	ErrExpiredPresignRequest
+	ErrRequestNotReadyYet
 	ErrUnsignedHeaders
 	ErrMissingDateHeader
 	ErrInvalidQuerySignatureAlgo
@@ -133,6 +133,7 @@ const (
 	ErrObjectExistsAsDirectory
 	ErrPolicyNesting
 	ErrInvalidObjectName
+	ErrServerNotInitialized
 	// Add new extended error codes here.
 	// Please open a https://github.com/minio/minio/issues before adding
 	// new error codes here.
@@ -190,11 +191,6 @@ var errorCodeResponse = map[APIErrorCode]APIError{
 		Code:           "BadDigest",
 		Description:    "The Content-Md5 you specified did not match what we received.",
 		HTTPStatusCode: http.StatusBadRequest,
-	},
-	ErrBucketAlreadyExists: {
-		Code:           "BucketAlreadyExists",
-		Description:    "The requested bucket name is not available.",
-		HTTPStatusCode: http.StatusConflict,
 	},
 	ErrEntityTooSmall: {
 		Code:           "EntityTooSmall",
@@ -448,7 +444,12 @@ var errorCodeResponse = map[APIErrorCode]APIError{
 		Description:    "Request has expired",
 		HTTPStatusCode: http.StatusForbidden,
 	},
-	// FIXME: Actual XML error response also contains the header which missed in lsit of signed header parameters.
+	ErrRequestNotReadyYet: {
+		Code:           "AccessDenied",
+		Description:    "Request is not valid yet",
+		HTTPStatusCode: http.StatusForbidden,
+	},
+	// FIXME: Actual XML error response also contains the header which missed in list of signed header parameters.
 	ErrUnsignedHeaders: {
 		Code:           "AccessDenied",
 		Description:    "There were headers present in the request which were not signed",
@@ -550,6 +551,11 @@ var errorCodeResponse = map[APIErrorCode]APIError{
 		Description:    "Object name contains unsupported characters. Unsupported characters are `^*|\\\"",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
+	ErrServerNotInitialized: {
+		Code:           "XMinioServerNotInitialized",
+		Description:    "Server not initialized, please try again.",
+		HTTPStatusCode: http.StatusServiceUnavailable,
+	},
 	// Add your error structure here.
 }
 
@@ -560,6 +566,7 @@ func toAPIErrorCode(err error) (apiErr APIErrorCode) {
 	if err == nil {
 		return ErrNone
 	}
+	err = errorCause(err)
 	// Verify if the underlying error is signature mismatch.
 	switch err {
 	case errSignatureMismatch:
@@ -600,6 +607,14 @@ func toAPIErrorCode(err error) (apiErr APIErrorCode) {
 		apiErr = ErrWriteQuorum
 	case InsufficientReadQuorum:
 		apiErr = ErrReadQuorum
+	case UnsupportedDelimiter:
+		apiErr = ErrNotImplemented
+	case InvalidMarkerPrefixCombination:
+		apiErr = ErrNotImplemented
+	case InvalidUploadIDKeyCombination:
+		apiErr = ErrNotImplemented
+	case MalformedUploadID:
+		apiErr = ErrNoSuchUpload
 	case PartTooSmall:
 		apiErr = ErrEntityTooSmall
 	default:

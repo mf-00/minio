@@ -29,7 +29,7 @@ import (
 // The location value in the request body should match the
 // region configured at serverConfig, otherwise error is returned.
 func isValidLocationConstraint(r *http.Request) (s3Error APIErrorCode) {
-	region := serverConfig.GetRegion()
+	serverRegion := serverConfig.GetRegion()
 	// If the request has no body with content-length set to 0,
 	// we do not have to validate location constraint. Bucket will
 	// be created at default region.
@@ -52,12 +52,12 @@ func isValidLocationConstraint(r *http.Request) (s3Error APIErrorCode) {
 	if incomingRegion == "" {
 		// Location constraint is empty for region "us-east-1",
 		// in accordance with protocol.
-		incomingRegion = serverRegion
+		incomingRegion = defaultRegion
 	}
 	// Return errInvalidRegion if location constraint does not match
 	// with configured region.
 	s3Error = ErrNone
-	if region != incomingRegion {
+	if serverRegion != incomingRegion {
 		s3Error = ErrInvalidRegion
 	}
 	return s3Error

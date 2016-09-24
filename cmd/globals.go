@@ -17,18 +17,22 @@
 package cmd
 
 import (
+	"time"
+
+	"os"
+
 	"github.com/fatih/color"
-	"github.com/minio/minio/pkg/objcache"
+	"github.com/mf-00/minio/pkg/objcache"
 )
 
 // Global constants for Minio.
 const (
-	minGoVersion = ">= 1.6" // Minio requires at least Go v1.6
+	minGoVersion = ">= 1.7.1" // minimum Go runtime version
 )
 
 // minio configuration related constants.
 const (
-	globalMinioConfigVersion = "6"
+	globalMinioConfigVersion = "7"
 	globalMinioConfigDir     = ".minio"
 	globalMinioCertsDir      = "certs"
 	globalMinioCertFile      = "public.crt"
@@ -40,6 +44,10 @@ const (
 var (
 	globalQuiet = false // Quiet flag set via command line
 	globalTrace = false // Trace flag set via environment setting.
+
+	globalDebug       = false // Debug flag set to print debug info.
+	globalDebugLock   = false // Lock debug info set via environment variable MINIO_DEBUG=lock .
+	globalDebugMemory = false // Memory debug info set via environment variable MINIO_DEBUG=mem
 	// Add new global flags here.
 
 	// Maximum connections handled per
@@ -58,6 +66,11 @@ var (
 	maxFormFieldSize = int64(1024 * 1024)
 )
 
+var (
+	// The maximum allowed difference between the request generation time and the server processing time
+	maxSkewTime = 15 * time.Minute
+)
+
 // global colors.
 var (
 	colorBlue = color.New(color.FgBlue).SprintfFunc()
@@ -65,6 +78,18 @@ var (
 )
 
 var (
-	newgo        = "newgo"
-	serverRegion = "us-east-1"
+	newgo         = "newgo"
+	defaultRegion = "us-east-1"
 )
+
+// fetch from environment variables and set the global values related to locks.
+func setGlobalsDebugFromEnv() {
+	debugEnv := os.Getenv("MINIO_DEBUG")
+	switch debugEnv {
+	case "lock":
+		globalDebugLock = true
+	case "mem":
+		globalDebugMemory = true
+	}
+	globalDebug = globalDebugLock || globalDebugMemory
+}

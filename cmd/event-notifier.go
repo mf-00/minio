@@ -19,8 +19,8 @@ package cmd
 import (
 	"bytes"
 	"encoding/xml"
-	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"path"
 	"sync"
@@ -112,7 +112,7 @@ func (en *eventNotifier) SetSNSTarget(snsARN string, listenerCh chan []Notificat
 	en.rwMutex.Lock()
 	defer en.rwMutex.Unlock()
 	if listenerCh == nil {
-		return errors.New("invalid argument")
+		return errInvalidArgument
 	}
 	en.snsTargets[snsARN] = append(en.snsTargets[snsARN], listenerCh)
 	return nil
@@ -161,7 +161,7 @@ func (en *eventNotifier) SetBucketNotificationConfig(bucket string, notification
 	en.rwMutex.Lock()
 	defer en.rwMutex.Unlock()
 	if notificationCfg == nil {
-		return errors.New("invalid argument")
+		return errInvalidArgument
 	}
 	en.notificationConfigs[bucket] = notificationCfg
 	return nil
@@ -178,8 +178,11 @@ func eventNotify(event eventData) {
 	//  - s3:ObjectCreated:CompleteMultipartUpload
 	//  - s3:ObjectRemoved:Delete
 
-	nConfig := eventN.GetBucketNotificationConfig(event.Bucket)
+	nConfig := globalEventNotifier.GetBucketNotificationConfig(event.Bucket)
 	// No bucket notifications enabled, drop the event notification.
+	if nConfig == nil {
+		return
+	}
 	if len(nConfig.QueueConfigs) == 0 && len(nConfig.TopicConfigs) == 0 && len(nConfig.LambdaConfigs) == 0 {
 		return
 	}
@@ -198,10 +201,12 @@ func eventNotify(event eventData) {
 		eventMatch := eventMatch(eventType, qConfig.Events)
 		ruleMatch := filterRuleMatch(objectName, qConfig.Filter.Key.FilterRules)
 		if eventMatch && ruleMatch {
-			targetLog := eventN.GetQueueTarget(qConfig.QueueARN)
+			targetLog := globalEventNotifier.GetQueueTarget(qConfig.QueueARN)
 			if targetLog != nil {
 				targetLog.WithFields(logrus.Fields{
-					"Records": notificationEvent,
+					"Key":       path.Join(event.Bucket, objectName),
+					"EventType": eventType,
+					"Records":   notificationEvent,
 				}).Info()
 			}
 		}
@@ -211,7 +216,7 @@ func eventNotify(event eventData) {
 		ruleMatch := filterRuleMatch(objectName, topicConfig.Filter.Key.FilterRules)
 		eventMatch := eventMatch(eventType, topicConfig.Events)
 		if eventMatch && ruleMatch {
-			targetListeners := eventN.GetSNSTarget(topicConfig.TopicARN)
+			targetListeners := globalEventNotifier.GetSNSTarget(topicConfig.TopicARN)
 			for _, listener := range targetListeners {
 				listener <- notificationEvent
 			}
@@ -224,6 +229,7 @@ func loadNotificationConfig(bucket string, objAPI ObjectLayer) (*notificationCon
 	// Construct the notification config path.
 	notificationConfigPath := path.Join(bucketConfigPrefix, bucket, bucketNotificationConfig)
 	objInfo, err := objAPI.GetObjectInfo(minioMetaBucket, notificationConfigPath)
+	err = errorCause(err)
 	if err != nil {
 		// 'notification.xml' not found return 'errNoSuchNotifications'.
 		// This is default when no bucket notifications are found on the bucket.
@@ -231,11 +237,13 @@ func loadNotificationConfig(bucket string, objAPI ObjectLayer) (*notificationCon
 		case ObjectNotFound:
 			return nil, errNoSuchNotifications
 		}
+		errorIf(err, "Unable to load bucket-notification for bucket %s", bucket)
 		// Returns error for other errors.
 		return nil, err
 	}
 	var buffer bytes.Buffer
 	err = objAPI.GetObject(minioMetaBucket, notificationConfigPath, 0, objInfo.Size, &buffer)
+	err = errorCause(err)
 	if err != nil {
 		// 'notification.xml' not found return 'errNoSuchNotifications'.
 		// This is default when no bucket notifications are found on the bucket.
@@ -243,6 +251,7 @@ func loadNotificationConfig(bucket string, objAPI ObjectLayer) (*notificationCon
 		case ObjectNotFound:
 			return nil, errNoSuchNotifications
 		}
+		errorIf(err, "Unable to load bucket-notification for bucket %s", bucket)
 		// Returns error for other errors.
 		return nil, err
 	}
@@ -270,13 +279,12 @@ func loadAllBucketNotifications(objAPI ObjectLayer) (map[string]*notificationCon
 
 	// Loads all bucket notifications.
 	for _, bucket := range buckets {
-		var nCfg *notificationConfig
-		nCfg, err = loadNotificationConfig(bucket.Name, objAPI)
-		if err != nil {
-			if err == errNoSuchNotifications {
+		nCfg, nErr := loadNotificationConfig(bucket.Name, objAPI)
+		if nErr != nil {
+			if nErr == errNoSuchNotifications {
 				continue
 			}
-			return nil, err
+			return nil, nErr
 		}
 		configs[bucket.Name] = nCfg
 	}
@@ -306,6 +314,14 @@ func loadAllQueueTargets() (map[string]*logrus.Logger, error) {
 		// Using accountID we can now initialize a new AMQP logrus instance.
 		amqpLog, err := newAMQPNotify(accountID)
 		if err != nil {
+			// Encapsulate network error to be more informative.
+			if _, ok := err.(net.Error); ok {
+				return nil, &net.OpError{
+					Op:  "Connecting to " + queueARN,
+					Net: "tcp",
+					Err: err,
+				}
+			}
 			return nil, err
 		}
 		queueTargets[queueARN] = amqpLog
@@ -325,6 +341,14 @@ func loadAllQueueTargets() (map[string]*logrus.Logger, error) {
 		// Using accountID we can now initialize a new Redis logrus instance.
 		redisLog, err := newRedisNotify(accountID)
 		if err != nil {
+			// Encapsulate network error to be more informative.
+			if _, ok := err.(net.Error); ok {
+				return nil, &net.OpError{
+					Op:  "Connecting to " + queueARN,
+					Net: "tcp",
+					Err: err,
+				}
+			}
 			return nil, err
 		}
 		queueTargets[queueARN] = redisLog
@@ -343,6 +367,13 @@ func loadAllQueueTargets() (map[string]*logrus.Logger, error) {
 		// Using accountID we can now initialize a new ElasticSearch logrus instance.
 		elasticLog, err := newElasticNotify(accountID)
 		if err != nil {
+			// Encapsulate network error to be more informative.
+			if _, ok := err.(net.Error); ok {
+				return nil, &net.OpError{
+					Op: "Connecting to " + queueARN, Net: "tcp",
+					Err: err,
+				}
+			}
 			return nil, err
 		}
 		queueTargets[queueARN] = elasticLog
@@ -352,7 +383,7 @@ func loadAllQueueTargets() (map[string]*logrus.Logger, error) {
 }
 
 // Global instance of event notification queue.
-var eventN *eventNotifier
+var globalEventNotifier *eventNotifier
 
 // Initialize event notifier.
 func initEventNotifier(objAPI ObjectLayer) error {
@@ -373,7 +404,7 @@ func initEventNotifier(objAPI ObjectLayer) error {
 	}
 
 	// Inititalize event notifier queue.
-	eventN = &eventNotifier{
+	globalEventNotifier = &eventNotifier{
 		rwMutex:             &sync.RWMutex{},
 		notificationConfigs: configs,
 		queueTargets:        queueTargets,
